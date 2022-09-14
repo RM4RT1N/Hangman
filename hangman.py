@@ -3,6 +3,19 @@ import time
 from os.path import exists
 from termcolor import colored
 
+# Game state ("intro", "menu", "game", "dead", "exit)
+app_state = "intro"
+
+# Termcolor text colors
+# grey
+# red
+# green
+# yellow
+# blue
+# magenta
+# cyan
+# white
+
 # Set of letters
 # They keep the color of the text.
 # cyan - default color (letter still not used)
@@ -82,7 +95,8 @@ def check_frames_count(file_name):
     file_exists = True
     file_index = 0
     while file_exists:
-        file_exists = exists(f".{slash}Data{slash}{file_name}{file_index}.txt")
+        catalog = os.getcwd()
+        file_exists = exists(f"{catalog}{slash}Data{slash}{file_name}{file_index}.txt")
         file_index += 1
     return file_index-1
 
@@ -91,32 +105,33 @@ def check_frames_count(file_name):
 # Every string is frame of the ASCII animation
 def load_animation(file_name):
     slash = get_os_slash()
-    logo_strings = []
+    animation_strings = []
 
     frames_count = check_frames_count(file_name)
 
     for file_index in range(0, frames_count):
-        logo_file = open(f".{slash}Data{slash}{file_name}{file_index}.txt", "rt")
-        logo_strings.append(logo_file.read())
-        print(logo_strings[file_index])
+        catalog = os.getcwd()
+        logo_file = open(f"{catalog}{slash}Data{slash}{file_name}{file_index}.txt", "rt")
+        animation_strings.append(logo_file.read())
         logo_file.close()
-    return logo_strings
+    return animation_strings
 
 
 # Parameters:
 # animations: ASCII animations list (literally a list of strings)
 # animation_time: duration of animation (in seconds)
 # logo_color: selected color of the animation
-def show_animation(animations, animation_time, animation_color):
+def play_animation(animations, animation_time, animation_color):
     animation_interval = animation_time / len(animations)
-
     clear_console()
-    time.sleep(1)
-
-    for current_logo_text in animations:
+    for current_animation in animations:
         clear_console()
-        print(f"{colored(current_logo_text, animation_color)}")
+        print(f"{colored(current_animation, animation_color)}")
         time.sleep(animation_interval)
+
+
+def show_static(animation, animation_color):
+    print(f"{colored(animation, animation_color)}")
 
 
 def use_letter(letter):
@@ -140,30 +155,141 @@ def draw_letters_ui():
     print(guit_text)
 
 
-# Game loop
-def hangman_game():
+# Animated intro.
+def intro_state():
     clear_console()
-    draw_letters_ui()
-    time.sleep(1)
+    intro_animation = load_animation("logo")
+    time.sleep(0.5)
+    play_animation(intro_animation, 1.7, "red")
+    global app_state
+    app_state = "menu"
+    hangman_game()
 
-    logo_animations = load_animation("logo")
+
+def draw_menu(logo_color):
+    clear_console()
+    menu_text = {
+        "[1] NEW GAME - EASY": "green",
+        "[2] NEW GAME - NORMAL": "yellow",
+        "[3] NEW GAME - HARD": "red",
+        "[4] NEW GAME - PERFECT": "magenta",
+        "[E] EXIT": "white"
+    }
+    menu_logo = load_animation("logo")
+    show_static(menu_logo[len(menu_logo)-1], logo_color)
+    print(3 * '\n')
+    menu_space = 22 * ' '
+
+    for menu_item in menu_text:
+        print(f"{menu_space}{colored(menu_item, menu_text.get(menu_item))}")
+
+
+# Everything what happen during menu
+def menu_state():
+    global app_state
+    draw_menu("cyan")
+
+    menu_space = 22 * ' '
+    print("\n")
+    player_selection = str(input(f"{menu_space}Your selection: "))
+    fade_time = 1
+
+    while True:
+        match player_selection:
+            case "1":
+                color = "green"
+                draw_menu(color)
+                time.sleep(fade_time)
+                app_state = "game"
+                hangman_game(color)
+                break
+            case "2":
+                color = "yellow"
+                draw_menu(color)
+                time.sleep(fade_time)
+                app_state = "game"
+                hangman_game(color)
+                break
+            case "3":
+                color = "red"
+                draw_menu(color)
+                time.sleep(fade_time)
+                app_state = "game"
+                hangman_game(color)
+                break
+            case "4":
+                color = "magenta"
+                draw_menu(color)
+                time.sleep(fade_time)
+                app_state = "game"
+                hangman_game(color)
+                break
+            case "E" | "e":
+                color = "white"
+                draw_menu(color)
+                time.sleep(fade_time)
+                app_state = "exit"
+                hangman_game(color)
+                break
+            case _:
+                print("\n")
+                print(f"{menu_space}{ colored('WRONG SELECTION - Use 1-4 or E', 'red')}")
+                time.sleep(2.5)
+                menu_state()
+                break
+
+
+# Everything what happen, when player is playing.
+def game_state(color):
     hangman_animation = load_animation("hangman")
-    dead_animation = load_animation("dead")
+    play_animation(hangman_animation, 8, color)
+    global app_state
 
-    show_animation(logo_animations, 2.5, "red")
-    show_animation(hangman_animation, 8, "cyan")
+    app_state = "dead"
+    hangman_game()
 
-    max_lives = 5
-    for current_lives in reversed(range(0, max_lives+1)):
-        clear_console()
-        if current_lives > 0:
-            print(f"Lives: {current_lives * ' ❤ '}")
-        else:
-            print(f"{colored('YOU ARE DEAD!', 'red')} {' ☠ '} ")
-        time.sleep(1)
-    time.sleep(2)
-    show_animation(dead_animation, 1, "green")
+
+def dead_state():
+    hangman_animation = load_animation("dead")
+    play_animation(hangman_animation, 2,  "green")
+
+    global app_state
+    app_state = "menu"
+    hangman_game()
+
+
+# Game loop
+def hangman_game(color="red"):
+    match app_state:
+        case "intro":
+            intro_state()
+        case "menu":
+            menu_state()
+        case "game":
+            game_state(color)
+        case "dead":
+            dead_state()
+        case "exit" | _:
+            clear_console()
 
 
 if __name__ == '__main__':
     hangman_game()
+
+    # logo_animations = load_animation("logo")
+    # hangman_animation = load_animation("hangman")
+    # dead_animation = load_animation("dead")
+    #
+    # show_animation(logo_animations, 2.5, "red")
+    # show_animation(hangman_animation, 8, "cyan")
+
+    # max_lives = 5
+    # for current_lives in reversed(range(0, max_lives+1)):
+    #     clear_console()
+    #     if current_lives > 0:
+    #         print(f"Lives: {current_lives * ' ❤ '}")
+    #     else:
+    #         print(f"{colored('YOU ARE DEAD!', 'red')} {' ☠ '} ")
+    #     time.sleep(1)
+    # time.sleep(2)
+    # show_animation(dead_animation, 1, "green")
