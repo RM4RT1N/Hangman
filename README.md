@@ -6,7 +6,7 @@
 ### Python built-in language elements:
 - Loops (syntax: for, while, break, return)
 - Statements (syntax: if, elif, else, match, case)
-### Data types
+### Data types:
 - build-in basic types (string, int)
 - lists
 - dictionaries
