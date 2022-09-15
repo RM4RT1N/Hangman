@@ -1,7 +1,5 @@
 # Hangman
 
----
-
 ## What we used:
 ### Python built-in language elements:
 - Loops (syntax: for, while, break, return)
@@ -26,10 +24,9 @@
 - rsptrip() - to delete additional spaces in string
 - lstrip() - to delete additional spaces in string
 
----
 
 ## IMPORTANT INFO:
-#### You need an termcolor module installed to run this game.
+#### You need a termcolor module installed to run this game.
 #### We used this module widely in many parts of the code.
 You can type: `pip install termcolor` in your terminal to install termcolor.
 
