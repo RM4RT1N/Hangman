@@ -198,6 +198,7 @@ def menu_state():
                 draw_menu()
                 sleep(fade_time)
                 clear_console()
+                exit()
                 break
             case _:
                 print(f"\n{menu_space}{colored('WRONG SELECTION - Use 1-4 or E', 'red')}")
@@ -287,8 +288,9 @@ def check_char(tab):
             break
         elif letter.lower()=='exit':
             menu_state()
+            break
         else:
-            print('Podaj literę alfabetu ')
+            print('Add a valid letter ')
             sleep(2)
             delete_last_line()
             delete_last_line()
@@ -368,6 +370,8 @@ def game_state():
         while work_table != input_table:
             
             letter = check_char(table_of_used_word)
+            if letter.lower() == 'exit':
+                break
             lives = count_lives(letter, input_table, table_of_used_word, lives)
             if not check_lives(lives):
                 show_hud(anim[frames[number_of_frame(lives)]],work_table,table_of_used_word,input_table,lives)
