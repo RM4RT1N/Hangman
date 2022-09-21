@@ -2,7 +2,7 @@ import os
 from time import sleep
 from termcolor import colored
 import random
-
+import sys
 
 # --------------------------------------------------
 # What are we used:
@@ -218,6 +218,10 @@ def correct_line(line, line_size=50):
     return line
 
 
+def dev_menu():
+    if "--dev" in sys.argv:
+        return True
+
 # Show game hud during game_state() (with an ASCII art on the right side)
 def show_hud(frame,w_tab,u_tab,s_tab,num_lives):
     current_level = game_config["level"]
@@ -231,8 +235,9 @@ def show_hud(frame,w_tab,u_tab,s_tab,num_lives):
                 hud = f"{space}Guess a country"
                 hud_color = "white"
             case 10:
-                hud = f"{space}{show_word(s_tab)}"
-                hud_color = "blue"
+                if dev_menu():
+                    hud = f"{space}{show_word(s_tab)}"
+                    hud_color = "blue"
             case 11:
                 hud = f"{space}{show_word(w_tab)}"
                 hud_color = "blue"
@@ -254,57 +259,20 @@ def show_hud(frame,w_tab,u_tab,s_tab,num_lives):
         print(f"{colored(line, current_level['color'])}", end='')
 
 
-def game_state():
-    anim = load_animation("hangman")
-    table_of_used_word = []
-    word = load_data()
-    input_table = create_table_of_word(word)
-    work_table = start_word(word)
-    current_level = game_config["level"]
-    lives = current_level["lives"]
-    current_level = game_config["level"]
-    frames = current_level["frames"]
-    
-    while True:
-        clear_console()
-        show_hud(anim[frames[number_of_frame(lives)]],work_table,table_of_used_word,input_table,lives)
-        print("Hint: Write 'exit' instead of letter to go back to main menu")
-        while work_table != input_table:
-            
-            letter = check_char()
-            lives = count_lives(letter, input_table, table_of_used_word, lives)
-            if not check_lives(lives):
-                show_hud(anim[frames[number_of_frame(lives)]],work_table,table_of_used_word,input_table,lives)
-                print(f'You lose. Correct word is {word}')
-                input(f"Press to start new game") 
-                menu_state()
-                break
-            
-            for i in range(len(input_table)):
-                while  input_table[i].lower() == letter.lower():
-                    work_table[i] = input_table[i]
-                    break          
-            if not letter in table_of_used_word:
-                table_of_used_word.append(letter)  
-                break        
-        if work_table == input_table:
-            break
+def delete_last_line():
+    "Use this function to delete the last line in the STDOUT"
+    #cursor up one line
+    sys.stdout.write('\x1b[1A')
+    #delete last line
+    sys.stdout.write('\x1b[2K')
 
-    print(f'Correct word :') 
-    print(*input_table)
-    print(f'You win') 
-    input(f"Press to start new game")   
-        
 
-    menu_state()
 
 
 def number_of_frame(curr_lives):
     current_level = game_config["level"]
     lives = current_level["lives"]
     return lives-curr_lives
-    
-
 
 
 def input_char():
@@ -312,15 +280,18 @@ def input_char():
     return letter
  
 
-def check_char():
+def check_char(tab):
     while True:
         letter = input_char()
-        if len(letter) == 1 and letter.isalpha():
+        if len(letter) == 1 and letter.isalpha() and letter not in tab:
             break
         elif letter.lower()=='exit':
             menu_state()
         else:
             print('Podaj literę alfabetu ')
+            sleep(2)
+            delete_last_line()
+            delete_last_line()
             
     return letter
 
@@ -340,6 +311,7 @@ def create_table_of_word (word):
     for i in range(len(word)):
         solid_table.append(word[i])
     return solid_table
+
 
 def check_lives(lives):
     if lives > 0:
@@ -376,6 +348,48 @@ def show_word(tab):
         if i != len(tab)-1:
             word = f'{word} ' 
     return word
+
+
+def game_state():
+    anim = load_animation("hangman")
+    table_of_used_word = []
+    word = load_data()
+    input_table = create_table_of_word(word)
+    work_table = start_word(word)
+    current_level = game_config["level"]
+    lives = current_level["lives"]
+    current_level = game_config["level"]
+    frames = current_level["frames"]
+    
+    while True:
+        clear_console()
+        show_hud(anim[frames[number_of_frame(lives)]],work_table,table_of_used_word,input_table,lives)
+        print("Hint: Write 'exit' instead of letter to go back to main menu")
+        while work_table != input_table:
+            
+            letter = check_char(table_of_used_word)
+            lives = count_lives(letter, input_table, table_of_used_word, lives)
+            if not check_lives(lives):
+                show_hud(anim[frames[number_of_frame(lives)]],work_table,table_of_used_word,input_table,lives)
+                print(f'You lose. Correct word is {word}')
+                input(f"Press to start new game") 
+                menu_state()
+                break
+            for i in range(len(input_table)):
+                while  input_table[i].lower() == letter.lower():
+                    work_table[i] = input_table[i]
+                    break          
+            if not letter in table_of_used_word:
+                table_of_used_word.append(letter)  
+                break        
+        if work_table == input_table:
+            break
+
+    print(f'Correct word :') 
+    print(*input_table)
+    print(f'You win') 
+    input(f"Press to start new game")       
+    menu_state()
 
 
 if __name__ == '__main__':
